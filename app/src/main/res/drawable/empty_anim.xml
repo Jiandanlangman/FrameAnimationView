@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animation-list xmlns:android="http://schemas.android.com/apk/res/android" android:oneshot="false">
+
+    <item android:drawable="@drawable/empty00" android:duration="40" />
+    <item android:drawable="@drawable/empty01" android:duration="40" />
+    <item android:drawable="@drawable/empty02" android:duration="40" />
+    <item android:drawable="@drawable/empty03" android:duration="40" />
+    <item android:drawable="@drawable/empty04" android:duration="40" />
+    <item android:drawable="@drawable/empty05" android:duration="40" />
+    <item android:drawable="@drawable/empty06" android:duration="40" />
+    <item android:drawable="@drawable/empty07" android:duration="40" />
+    <item android:drawable="@drawable/empty08" android:duration="40" />
+    <item android:drawable="@drawable/empty09" android:duration="40" />
+    <item android:drawable="@drawable/empty10" android:duration="40" />
+    <item android:drawable="@drawable/empty11" android:duration="40" />
+    <item android:drawable="@drawable/empty12" android:duration="40" />
+    <item android:drawable="@drawable/empty13" android:duration="40" />
+    <item android:drawable="@drawable/empty14" android:duration="40" />
+    <item android:drawable="@drawable/empty15" android:duration="40" />
+    <item android:drawable="@drawable/empty16" android:duration="40" />
+    <item android:drawable="@drawable/empty17" android:duration="40" />
+    <item android:drawable="@drawable/empty18" android:duration="40" />
+    <item android:drawable="@drawable/empty19" android:duration="40" />
+    <item android:drawable="@drawable/empty20" android:duration="40" />
+    <item android:drawable="@drawable/empty21" android:duration="40" />
+    <item android:drawable="@drawable/empty22" android:duration="40" />
+    <item android:drawable="@drawable/empty23" android:duration="40" />
+    <item android:drawable="@drawable/empty24" android:duration="40" />
+    <item android:drawable="@drawable/empty25" android:duration="40" />
+    <item android:drawable="@drawable/empty26" android:duration="40" />
+    <item android:drawable="@drawable/empty27" android:duration="40" />
+    <item android:drawable="@drawable/empty28" android:duration="40" />
+    <item android:drawable="@drawable/empty29" android:duration="40" />
+    <item android:drawable="@drawable/empty30" android:duration="40" />
+    <item android:drawable="@drawable/empty31" android:duration="40" />
+    <item android:drawable="@drawable/empty32" android:duration="40" />
+    <item android:drawable="@drawable/empty33" android:duration="40" />
+    <item android:drawable="@drawable/empty34" android:duration="40" />
+    <item android:drawable="@drawable/empty35" android:duration="40" />
+    <item android:drawable="@drawable/empty36" android:duration="40" />
+    <item android:drawable="@drawable/empty37" android:duration="40" />
+    <item android:drawable="@drawable/empty38" android:duration="40" />
+    <item android:drawable="@drawable/empty39" android:duration="40" />
+    <item android:drawable="@drawable/empty40" android:duration="40" />
+    <item android:drawable="@drawable/empty41" android:duration="40" />
+    <item android:drawable="@drawable/empty42" android:duration="40" />
+    <item android:drawable="@drawable/empty43" android:duration="40" />
+    <item android:drawable="@drawable/empty44" android:duration="40" />
+    <item android:drawable="@drawable/empty45" android:duration="40" />
+    <item android:drawable="@drawable/empty46" android:duration="40" />
+    <item android:drawable="@drawable/empty47" android:duration="40" />
+    <item android:drawable="@drawable/empty48" android:duration="40" />
+    <item android:drawable="@drawable/empty49" android:duration="40" />
+    <item android:drawable="@drawable/empty50" android:duration="40" />
+    <item android:drawable="@drawable/empty51" android:duration="40" />
+    <item android:drawable="@drawable/empty52" android:duration="40" />
+    <item android:drawable="@drawable/empty53" android:duration="40" />
+    <item android:drawable="@drawable/empty54" android:duration="40" />
+    <item android:drawable="@drawable/empty55" android:duration="40" />
+    <item android:drawable="@drawable/empty56" android:duration="40" />
+    <item android:drawable="@drawable/empty57" android:duration="40" />
+    <item android:drawable="@drawable/empty58" android:duration="40" />
+    <item android:drawable="@drawable/empty59" android:duration="40" />
+    <item android:drawable="@drawable/empty00" android:duration="40" />
+
+</animation-list>
