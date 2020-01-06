@@ -13,36 +13,32 @@ import java.util.concurrent.Executors
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.math.abs
 
-class FrameAnimationView @JvmOverloads constructor(
-    context: Context,
-    attrs: AttributeSet? = null,
-    defStyleAttr: Int = 0
-) : TextureView(context, attrs, defStyleAttr) {
+
+class FrameAnimationView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0) : TextureView(context, attrs, defStyleAttr) {
 
     private companion object {
         const val MAX_CACHE_FRAME = 4
     }
 
-    private val lock = Object()
     private val drawLock = ReentrantLock()
+    private val lock = Object()
     private val cacheFrames = ArrayList<Frame>()
     private val onGlobalLayoutListener = ViewTreeObserver.OnGlobalLayoutListener {
-
-        if (isShown && isTextureAvailable) {
-            synchronized(lock) {
-                if (animation == null) {
+        if (isShown) {
+            drawLock.lock()
+            try {
+                if (isTextureAvailable && animation == null) {
                     val canvas = lockCanvas()
                     if (canvas != null) {
-                        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
+                        canvas.drawColor(Color.BLACK, PorterDuff.Mode.CLEAR)
                         unlockCanvasAndPost(canvas)
                     }
-                } else
-                    lock.notifyAll()
+                }
+            } finally {
+                drawLock.unlock()
             }
         }
     }
-
-
     private val listenerInvokeHandler = Handler()
     private val audioPlayer = FrameAnimationAudioPlayer(context)
 
@@ -61,16 +57,10 @@ class FrameAnimationView @JvmOverloads constructor(
     init {
         isOpaque = false
         surfaceTextureListener = object : SurfaceTextureListener {
-            override fun onSurfaceTextureSizeChanged(
-                surface: SurfaceTexture,
-                width: Int,
-                height: Int
-            ) = Unit
-
+            override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) = Unit
             override fun onSurfaceTextureUpdated(surface: SurfaceTexture) = Unit
             override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
-                viewTreeObserver.removeOnGlobalLayoutListener(onGlobalLayoutListener)
-                synchronized(lock) { isTextureAvailable = false }
+                isTextureAvailable = false
                 preloadFrameThreadPool?.shutdown()
                 workThreadPool?.shutdown()
                 drawLock.lock()
@@ -78,13 +68,8 @@ class FrameAnimationView @JvmOverloads constructor(
                 return true
             }
 
-            override fun onSurfaceTextureAvailable(
-                surface: SurfaceTexture,
-                width: Int,
-                height: Int
-            ) {
-                synchronized(lock) { isTextureAvailable = true }
-                viewTreeObserver.addOnGlobalLayoutListener(onGlobalLayoutListener)
+            override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
+                isTextureAvailable = true
                 preloadFrameThreadPool?.shutdown()
                 workThreadPool?.shutdown()
                 preloadFrameThreadPool = Executors.newSingleThreadExecutor()
@@ -97,6 +82,15 @@ class FrameAnimationView @JvmOverloads constructor(
         }
     }
 
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        viewTreeObserver.addOnGlobalLayoutListener(onGlobalLayoutListener)
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        viewTreeObserver.removeOnGlobalLayoutListener(onGlobalLayoutListener)
+    }
 
     fun startAnimation(animation: FrameAnimation) {
         if (!isTextureAvailable) {
@@ -108,7 +102,8 @@ class FrameAnimationView @JvmOverloads constructor(
             return
         this.animation = animation
         workThreadPool!!.execute {
-            Process.setThreadPriority(-19)
+            Thread.currentThread().priority = Thread.MAX_PRIORITY
+            Process.setThreadPriority(Process.myTid(), Process.THREAD_PRIORITY_DISPLAY)
             try {
                 animation.prepare()
             } catch (tr: Throwable) {
@@ -120,17 +115,17 @@ class FrameAnimationView @JvmOverloads constructor(
             audioPlayer.init(animation)
             drawFrame(animation)
             animation.recycle()
-            synchronized(lock) {
+            drawLock.lock()
+            try {
                 if (isTextureAvailable && cleanCanvas) {
-                    synchronized(drawLock) {
-                        val canvas = lockCanvas()
-                        if (canvas != null) {
-                            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
-                            unlockCanvasAndPost(canvas)
-                        }
+                    val canvas = lockCanvas()
+                    if (canvas != null) {
+                        canvas.drawColor(Color.BLACK, PorterDuff.Mode.CLEAR)
+                        unlockCanvasAndPost(canvas)
                     }
                 }
-                lock.notifyAll()
+            } finally {
+                drawLock.unlock()
             }
             if (animation == this.animation && isTextureAvailable)
                 listenerInvokeHandler.post { animationListener.onAnimationEnd(animation) }
@@ -174,7 +169,8 @@ class FrameAnimationView @JvmOverloads constructor(
         synchronized(lock) { isPreLoading = true }
         cacheFrames.clear()
         preloadFrameThreadPool!!.execute {
-            Process.setThreadPriority(-19)
+            Thread.currentThread().priority = Thread.MAX_PRIORITY
+            Process.setThreadPriority(Process.myTid(), Process.THREAD_PRIORITY_DISPLAY)
             var position = 0
             var repeatCount = 0
             var isReversed = false
@@ -182,15 +178,7 @@ class FrameAnimationView @JvmOverloads constructor(
                 var breakWhile = false
                 synchronized(lock) {
                     if (isTextureAvailable && animation == this.animation) {
-                        cacheFrames.add(
-                            Frame(
-                                animation.getFrame(position),
-                                animation.getFrameDuration(position),
-                                position,
-                                repeatCount,
-                                isReversed
-                            )
-                        )
+                        cacheFrames.add(Frame(animation.getFrame(position), animation.getFrameDuration(position), position, repeatCount, isReversed))
                         lock.notifyAll()
                         if (cacheFrames.size >= MAX_CACHE_FRAME)
                             try {
@@ -271,23 +259,17 @@ class FrameAnimationView @JvmOverloads constructor(
             if (frame!!.position == 0) {
                 if (frame!!.repeatCount == 0) {
                     audioPlayer.pauseAndSeekToStart()
-                    handler.post { animationListener.onAnimationStart(animation) }
+                    listenerInvokeHandler.post { animationListener.onAnimationStart(animation) }
                 } else {
                     audioPlayer.pauseAndSeekToStart()
-                    handler.post {
-                        animationListener.onAnimationRepeat(
-                            animation,
-                            frame!!.repeatCount
-                        )
-                    }
+                    listenerInvokeHandler.post { animationListener.onAnimationRepeat(animation, frame!!.repeatCount) }
                 }
             } else if (frame!!.position == animation.getFrameCount() - 1 && frame!!.isReversed) {
                 audioPlayer.pauseAndSeekToStart()
-                handler.post { animationListener.onAnimationRepeat(animation, frame!!.repeatCount) }
+                listenerInvokeHandler.post { animationListener.onAnimationRepeat(animation, frame!!.repeatCount) }
             }
             audioPlayer.start()
-            val duration =
-                (if (delayStrategy == DelayStrategy.PRECISE_TIME) frame!!.duration.toLong() - (SystemClock.elapsedRealtime() - time) else frame!!.duration.toLong()) - timeOffset
+            val duration = (if (delayStrategy == DelayStrategy.PRECISE_TIME) frame!!.duration.toLong() - (SystemClock.elapsedRealtime() - time) else frame!!.duration.toLong()) - timeOffset
             if (duration > 0L)
                 try {
                     val t = SystemClock.elapsedRealtime()
@@ -301,27 +283,17 @@ class FrameAnimationView @JvmOverloads constructor(
 
 
     private fun drawFrame(canvas: Canvas, drawable: Bitmap) {
-        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
-        val scale =
-            if (abs(canvas.width - drawable.width) <= (canvas.height - drawable.height)) canvas.width / drawable.width.toFloat() else canvas.height / drawable.height.toFloat()
+        canvas.drawColor(Color.BLACK, PorterDuff.Mode.CLEAR)
+        val scale = if (abs(canvas.width - drawable.width) <= (canvas.height - drawable.height)) canvas.width / drawable.width.toFloat() else canvas.height / drawable.height.toFloat()
         canvas.save()
-        canvas.translate(
-            (canvas.width - drawable.width * scale) / 2f,
-            (canvas.height - drawable.height * scale) / 2f
-        )
+        canvas.translate((canvas.width - drawable.width * scale) / 2f, (canvas.height - drawable.height * scale) / 2f)
         canvas.scale(scale, scale)
         canvas.drawBitmap(drawable, 0f, 0f, null)
         canvas.restore()
     }
 
 
-    private inner class Frame(
-        val drawable: Bitmap,
-        val duration: Int,
-        val position: Int,
-        val repeatCount: Int,
-        val isReversed: Boolean
-    )
+    private inner class Frame(val drawable: Bitmap, val duration: Int, val position: Int, val repeatCount: Int, val isReversed: Boolean)
 
 
     enum class DelayStrategy {

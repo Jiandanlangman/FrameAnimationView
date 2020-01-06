@@ -76,6 +76,7 @@ class ZipFrameAnimation(private val context: Context, path: String) : FrameAnima
             options.outWidth = width
             options.outHeight = height
         } else {
+            options.inBitmap = null
             options.inJustDecodeBounds = true
             BitmapFactory.decodeStream(iss, null, options)
         }
@@ -98,7 +99,10 @@ class ZipFrameAnimation(private val context: Context, path: String) : FrameAnima
 
     override fun recycle() {
         reusable.recycleReusableBitmaps()
+        frameList.clear()
         zipFile.close()
+        options.inBitmap?.recycle()
+        options.inBitmap = null
         if (audioPath.isNotEmpty())
             File(audioPath).delete()
 
@@ -140,11 +144,7 @@ class ZipFrameAnimation(private val context: Context, path: String) : FrameAnima
                     width /= options.inSampleSize
                     height /= options.inSampleSize
                 }
-                val byteCount = width * height * when (bitmap.config) {
-                    Bitmap.Config.ARGB_8888 -> 4
-                    Bitmap.Config.RGB_565, Bitmap.Config.ARGB_4444 -> 2
-                    else -> 1
-                }
+                val byteCount = width * height * 4
                 return byteCount <= bitmap.allocationByteCount
             }
             return bitmap.width == options.outWidth && bitmap.height == options.outHeight && options.inSampleSize == 1
